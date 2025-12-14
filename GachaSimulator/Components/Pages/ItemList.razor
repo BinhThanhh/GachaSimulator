@@ -1,0 +1,86 @@
+﻿@page "/items"
+@using GachaSimulator.Models
+@using GachaSimulator.Services
+@inject GachaService GachaService
+
+<MudText Typo="Typo.h3" Color="Color.Primary" GutterBottom="true">Kho Dữ Liệu</MudText>
+
+@if (items == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var item in items)
+        {
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="3" Class="h-100 hover-effect">
+                    <MudCardMedia Image="@item.ImageUrl" Height="200" Style="background-size:contain; background-position: center;" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Align="Align.Center">@item.Name</MudText>
+
+                        <div class="d-flex justify-center mt-2 align-center gap-2">
+                            <MudChip T="string" Color="@GetColor(item.Rarity)" Size="Size.Small">@item.Rarity ⭐</MudChip>
+
+                            @if (item.Element != ElementType.none)
+                            {
+                                <MudTooltip Text="@item.Element.ToString()">
+                                    <MudAvatar Style="@($"background-color: {GetElementBackgroundColor(item.Element)}; width:32px; height:32px;")">
+                                        <MudImage Src="@GetElementImageUrl(item.Element)" Width="25" Height="25" ObjectFit="ObjectFit.Contain" />
+                                    </MudAvatar>
+                                </MudTooltip>
+                            }
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<style>
+    .hover-effect:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        border: 2px solid #FFD700;
+    }
+</style>
+
+@code {
+    private List<Items>? items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await GachaService.GetAllItemsAsync();
+    }
+
+    private Color GetColor(int rarity) => rarity == 5 ? Color.Warning : (rarity == 4 ? Color.Secondary : Color.Default);
+
+    private string GetElementImageUrl(ElementType? type)
+    {
+        return type switch
+        {
+            ElementType.pyro => $"https://api.hakush.in/gi/UI/Pyro.webp",
+            ElementType.hydro => $"https://api.hakush.in/gi/UI/Hydro.webp",
+            ElementType.anemo => $"https://api.hakush.in/gi/UI/Anemo.webp",
+            ElementType.electro => $"https://api.hakush.in/gi/UI/Electro.webp",
+            ElementType.dendro => $"https://api.hakush.in/gi/UI/Dendro.webp",
+            ElementType.cryo => $"https://api.hakush.in/gi/UI/Cryo.webp",
+            ElementType.geo => $"https://api.hakush.in/gi/UI/Geo.webp",
+            _ => ""
+        };
+    }
+
+    private string GetElementBackgroundColor(ElementType? type) => type switch
+    {
+        ElementType.pyro => "rgba(255, 69, 0, 0.2)",   // Đỏ nhạt
+        ElementType.hydro => "rgba(0, 191, 255, 0.2)", // Xanh dương nhạt
+        ElementType.electro => "rgba(138, 43, 226, 0.2)", // Tím nhạt
+        ElementType.dendro => "rgba(50, 205, 50, 0.2)", // Xanh lá nhạt
+        ElementType.anemo => "rgba(64, 224, 208, 0.2)", // Xanh ngọc nhạt
+        ElementType.cryo => "rgba(224, 255, 255, 0.5)", // Trắng xanh
+        ElementType.geo => "rgba(218, 165, 32, 0.2)",   // Vàng đất nhạt
+        _ => "transparent"
+    };
+}
