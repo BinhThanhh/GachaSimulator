@@ -3,6 +3,14 @@
 @using GachaSimulator.Services
 @inject GachaService GachaService
 
+@* <style>
+    body {
+        background-image: url('https://wishsimulator.app/internal/immutable/assets/wish-background-bc054754.webp');
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+</style> *@
+
 <MudText Typo="Typo.h3" Color="Color.Primary" GutterBottom="true">Kho Dữ Liệu</MudText>
 
 @if (items == null)
@@ -11,6 +19,9 @@
 }
 else
 {
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Href="/add-item" Class="mb-4">
+        Thêm Item Mới
+    </MudButton>
     <MudGrid>
         @foreach (var item in items)
         {

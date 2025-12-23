@@ -12,6 +12,9 @@ namespace GachaSimulator.Data
 
         public DbSet<Items> Items { get; set; }
         public DbSet<WishHistory> WishHistories { get; set; }
+        public DbSet<UserPityState> UserPityState { get; set; } = null!;
+        public DbSet<Banner> Banners { get; set; } = null!;
+        public DbSet<BannerRateUp> BannerRateUps { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +27,18 @@ namespace GachaSimulator.Data
                       .HasConversion<string>();
                 entity.Property(e => e.Element)
                       .HasConversion<string>();
+            });
+
+            //Configure UserPityState BannerType as string
+            modelBuilder.Entity<UserPityState>(entity =>
+            {
+                entity.Property(e => e.BannerType).HasConversion<string>();
+            });
+
+            //Configure Banner as string
+            modelBuilder.Entity<Banner>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion<string>();
             });
 
             //Configure WishHistory Id as char(36)

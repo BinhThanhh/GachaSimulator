@@ -1,0 +1,129 @@
+﻿@page "/add-item"
+@using GachaSimulator.Models
+@using GachaSimulator.Services
+@using MudBlazor
+@inject GachaService GachaService
+@inject NavigationManager NavManager
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-5">
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Color="Color.Primary" Align="Align.Center">✨ Thêm Item Mới</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+
+        <MudCardContent>
+            <MudForm @ref="form">
+                <MudStack Spacing="4">
+
+                    <MudTextField T="string" Label="Tên Nhân vật / Vũ khí" Variant="Variant.Outlined"
+                                  @bind-Value="newItem.Name" Required="true" RequiredError="Tên không được để trống!" />
+
+                    <MudTextField T="string" Label="Link Ảnh (URL)" Variant="Variant.Outlined"
+                                  @bind-Value="newItem.ImageUrl" HelperText="Nên dùng link ảnh PNG/WEBP trong suốt" />
+
+                    <MudSelect T="int?" Label="Độ hiếm" Variant="Variant.Outlined"
+                               @bind-Value="selectedRarity"
+                               Required="true" RequiredError="Vui lòng chọn độ hiếm!"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="int?" Value="3">
+                            <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Info" Class="mr-2" /> 3 Sao</div>
+                        </MudSelectItem>
+                        <MudSelectItem T="int?" Value="4">
+                            <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Secondary" Class="mr-2" /> 4 Sao</div>
+                        </MudSelectItem>
+                        <MudSelectItem T="int?" Value="5">
+                            <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" Class="mr-2" /> 5 Sao</div>
+                        </MudSelectItem>
+                    </MudSelect>
+
+                    <MudSelect T="ItemType?" Label="Loại" Variant="Variant.Outlined"
+                               @bind-Value="selectedType"
+                               Required="true" RequiredError="Vui lòng chọn loại Item!"
+                               AnchorOrigin="Origin.BottomCenter">
+                        @foreach (ItemType t in Enum.GetValues(typeof(ItemType)))
+                        {
+                            <MudSelectItem T="ItemType?" Value="@t">@t</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @if (selectedType == ItemType.character)
+                    {
+                        <MudSelect T="ElementType?" Label="Nguyên tố" Variant="Variant.Outlined"
+                                   @bind-Value="selectedElement"
+                                   Required="true" RequiredError="Nhân vật phải có Vision!"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            @foreach (ElementType el in Enum.GetValues(typeof(ElementType)))
+                            {
+                                @if (el != ElementType.none)
+                                {
+                                    <MudSelectItem T="ElementType?" Value="(ElementType?)el">
+                                        <div class="d-flex align-center">
+                                            <MudImage Src="@GetElementImageUrl(el)" Width="28" Height="28" Class="mr-2" />
+                                            @el.ToString()
+                                        </div>
+                                    </MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                    }
+
+                </MudStack>
+            </MudForm>
+        </MudCardContent>
+
+        <MudCardActions Class="justify-end pa-4">
+            <MudButton Variant="Variant.Text" OnClick="GoBack">Hủy</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveItem" Class="ml-2">Lưu Item</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    MudForm form;
+    private Items newItem = new Items { Name = "", ImageUrl = "" };
+
+    private int? selectedRarity = null;
+    private ItemType? selectedType = null;
+    private ElementType? selectedElement = null;
+
+    private async Task SaveItem()
+    {
+        await form.Validate();
+        if (!form.IsValid) return;
+
+        newItem.Rarity = selectedRarity!.Value;
+        newItem.Type = selectedType!.Value;
+
+        if (newItem.Type == ItemType.character)
+        {
+            newItem.Element = selectedElement;
+        }
+        else
+        {
+            newItem.Element = ElementType.none;
+        }
+
+        await GachaService.AddItemAsync(newItem);
+        NavManager.NavigateTo("/items");
+    }
+
+    private void GoBack() => NavManager.NavigateTo("/items");
+
+    // --- CẬP NHẬT: HÀM LẤY LINK ẢNH TỪ API HAKUSH.IN ---
+    private string GetElementImageUrl(ElementType? type)
+    {
+        return type switch
+        {
+            ElementType.pyro => "https://api.hakush.in/gi/UI/Pyro.webp",
+            ElementType.hydro => "https://api.hakush.in/gi/UI/Hydro.webp",
+            ElementType.anemo => "https://api.hakush.in/gi/UI/Anemo.webp",
+            ElementType.electro => "https://api.hakush.in/gi/UI/Electro.webp",
+            ElementType.dendro => "https://api.hakush.in/gi/UI/Dendro.webp",
+            ElementType.cryo => "https://api.hakush.in/gi/UI/Cryo.webp",
+            ElementType.geo => "https://api.hakush.in/gi/UI/Geo.webp",
+            _ => ""
+        };
+    }
+}

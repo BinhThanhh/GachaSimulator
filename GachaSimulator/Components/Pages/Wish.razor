@@ -1,0 +1,150 @@
+﻿@page "/wish"
+@using GachaSimulator.Services
+@using GachaSimulator.Models
+@inject GachaService GachaService
+@inject IDialogService DialogService
+
+@* <div style="background-image: url('https://wishsimulator.app/internal/immutable/assets/wish-background-bc054754.webp'); 
+     background-size: cover;
+         background-attachment: fixed;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+       flex-direction: column;
+  align-items: center;
+            justify-content: center;
+            padding: 20px;"> *@
+
+  <!-- Main Banner Card -->
+ <MudCard Style="max-width: 600px; width: 100%; margin-bottom: 40px; backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+        <MudCardContent Class="pa-6">
+  <MudStack Spacing="4">
+             <!-- Banner Title -->
+     <div>
+       <MudChip T="string" Label="true" Variant="Variant.Outlined" Color="Color.Warning" Class="mb-2">
+    Novice Wishes
+</MudChip>
+         <MudText Typo="Typo.h4" Style="font-weight: bold; color: #333;">
+   Beginners' Wish
+              </MudText>
+           </div>
+
+                <!-- Banner Description -->
+ <MudText Typo="Typo.body1" Style="color: #666; line-height: 1.6;">
+      10-set 20% off. First 10-set will receive Noelle.
+     </MudText>
+
+         <!-- Special Info Box -->
+          <MudAlert Severity="Severity.Info" Style="background: rgba(220, 80, 80, 0.1); border-left: 4px solid #DC5050; padding: 12px; border-radius: 8px;">
+      <MudText Style="color: #DC5050; font-weight: bold; font-size: 14px;">
+       ✦ Every 10 wishes is guaranteed to include at least one 4-star or higher item
+          </MudText>
+     </MudAlert>
+
+            <!-- Roll Buttons -->
+            <MudStack Row="true" Spacing="3" Class="mt-4">
+              <MudButton Variant="Variant.Filled" 
+           Color="Color.Surface" 
+  FullWidth="true"
+       Style="border-radius: 8px; font-weight: bold; padding: 12px; color: #333; background-color: #f0f0f0;"
+    OnClick="@(() => Roll(1))">
+            Wish ×1
+       </MudButton>
+
+        <MudButton Variant="Variant.Filled" 
+     Color="Color.Warning" 
+           FullWidth="true"
+      Style="border-radius: 8px; font-weight: bold; padding: 12px;"
+          OnClick="@(() => Roll(10))">
+        Wish ×10
+           </MudButton>
+             </MudStack>
+            </MudStack>
+        </MudCardContent>
+ </MudCard>
+
+  <!-- History Section -->
+    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+        <MudText Typo="Typo.h5" Class="mb-4" Style="color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+ Lịch sử vừa quay
+  </MudText>
+
+<MudPaper Class="pa-4" Style="background: rgba(255,255,255,0.95); border-radius: 12px;">
+            <MudTable Items="@recentPulls" Hover="true" Breakpoint="Breakpoint.Sm">
+       <HeaderContent>
+     <MudTh>Thời gian</MudTh>
+       <MudTh>Tên vật phẩm</MudTh>
+            <MudTh>Loại</MudTh>
+            <MudTh>Độ hiếm</MudTh>
+                </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Time">@context.TimePulled.ToString("HH:mm:ss")</MudTd>
+  <MudTd DataLabel="Name" Style="@GetColorStyle(context.Items?.Rarity ?? 3)">
+        @context.Items?.Name
+             </MudTd>
+       <MudTd DataLabel="Type">@context.Items?.Type</MudTd>
+       <MudTd DataLabel="Rarity">
+            @if (context.Items?.Rarity == 5)
+   {
+      <MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" />
+   }
+ else if (context.Items?.Rarity == 4)
+     {
+            <MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Secondary" />
+   }
+   @context.Items?.Rarity ★
+           </MudTd>
+    </RowTemplate>
+     </MudTable>
+        </MudPaper>
+    </MudContainer>
+
+@code {
+    private List<WishHistory> recentPulls = new List<WishHistory>();
+    private bool isRolling = false;
+
+    private async Task Roll(int times)
+    {
+        if (isRolling) return;
+        isRolling = true;
+
+        // Giả lập độ trễ mạng cho giống game
+        await Task.Delay(500);
+
+        // Gọi Service quay (Giả sử Banner ID = 1)
+        var newPulls = await GachaService.RollBannerAsync(1, times);
+
+        // Thêm vào đầu danh sách hiển thị
+        newPulls.Reverse();
+        recentPulls.InsertRange(0, newPulls);
+
+        // Hiển thị kết quả bằng Popup (Dialog)
+        await ShowResultDialog(newPulls);
+
+        isRolling = false;
+    }
+
+    private async Task ShowResultDialog(List<WishHistory> items)
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("Items", items);
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        // Chỗ này cần tạo thêm 1 file DialogResult.razor nữa để hiển thị đẹp
+        // Tạm thời mình dùng MessageBox đơn giản trước nhé
+        bool has5Star = items.Any(x => x.Items?.Rarity == 5);
+        string title = has5Star ? "QUAY RA VÀNG!!! 🌟" : "Kết quả Cầu nguyện";
+
+        string content = string.Join(", ", items.Select(x => x.Items?.Name));
+
+        await DialogService.ShowMessageBox(title, content, yesText: "Xác nhận");
+    }
+
+    private string GetColorStyle(int rarity) => rarity switch
+    {
+        5 => "color: #FFD700; font-weight: bold;", // Vàng
+        4 => "color: #9370DB; font-weight: bold;", // Tím
+        _ => "color: #888;"
+    };
+}
