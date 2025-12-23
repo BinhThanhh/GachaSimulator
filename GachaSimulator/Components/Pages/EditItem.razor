@@ -1,0 +1,160 @@
+﻿@page "/edit-item/{Id:int}"
+@rendermode InteractiveServer
+@using GachaSimulator.Models
+@using GachaSimulator.Services
+@using MudBlazor
+@inject GachaService GachaService
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-5">
+    @if (currentItem == null)
+    {
+        <MudAlert Severity="Severity.Info">Đang tải dữ liệu...</MudAlert>
+    }
+    else
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5" Color="Color.Info" Align="Align.Center">✏️ Chỉnh sửa Item</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+
+            <MudCardContent>
+                <MudForm @ref="form">
+                    <MudStack Spacing="4">
+                        <MudTextField Label="Tên Nhân vật / Vũ khí" Variant="Variant.Outlined"
+                                      @bind-Value="currentItem.Name" Required="true" RequiredError="Tên không được để trống!" />
+
+                        <MudTextField Label="Link Ảnh (URL)" Variant="Variant.Outlined"
+                                      @bind-Value="currentItem.ImageUrl" HelperText="Nên dùng link ảnh PNG/WEBP trong suốt" />
+
+                        <MudSelect T="int" Label="Độ hiếm" Variant="Variant.Outlined"
+                                   @bind-Value="currentItem.Rarity"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="3">
+                                <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Info" Class="mr-2" /> 3 Sao</div>
+                            </MudSelectItem>
+                            <MudSelectItem Value="4">
+                                <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Secondary" Class="mr-2" /> 4 Sao</div>
+                            </MudSelectItem>
+                            <MudSelectItem Value="5">
+                                <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Star" Color="Color.Warning" Class="mr-2" /> 5 Sao</div>
+                            </MudSelectItem>
+                        </MudSelect>
+
+                        <MudSelect T="ItemType" Label="Loại" Variant="Variant.Outlined"
+                                   @bind-Value="currentItem.Type"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            @foreach (ItemType t in Enum.GetValues(typeof(ItemType)))
+                            {
+                                <MudSelectItem Value="@t">@t</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                        @if (currentItem.Type == ItemType.character)
+                        {
+                            <MudSelect T="ElementType?" Label="Nguyên tố" Variant="Variant.Outlined"
+                                       @bind-Value="currentItem.Element"
+                                       Required="true" RequiredError="Nhân vật phải có Vision!"
+                                       AnchorOrigin="Origin.BottomCenter">
+                                @foreach (ElementType el in Enum.GetValues(typeof(ElementType)))
+                                {
+                                    @if (el != ElementType.none)
+                                    {
+                                        <MudSelectItem Value="(ElementType?)el">
+                                            <div class="d-flex align-center">
+                                                <MudImage Src="@GetElementImageUrl(el)" Width="28" Height="28" Class="mr-2" />
+                                                @el
+                                            </div>
+                                        </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        }
+                    </MudStack>
+                </MudForm>
+            </MudCardContent>
+
+            <MudCardActions Class="justify-space-between pa-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="DeleteConfirm">Xóa Item</MudButton>
+
+                <div>
+                    <MudButton Variant="Variant.Text" OnClick="GoBack" Class="mr-2">Hủy</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="UpdateItem">Lưu thay đổi</MudButton>
+                </div>
+            </MudCardActions>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    MudForm form;
+    private Items? currentItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load dữ liệu từ DB dựa vào ID trên URL
+        currentItem = await GachaService.GetItemByIdAsync(Id);
+
+        // Nếu không tìm thấy (VD: Gõ ID linh tinh), quay về trang list
+        if (currentItem == null)
+        {
+            NavManager.NavigateTo("/items");
+        }
+    }
+
+    private async Task UpdateItem()
+    {
+        await form.Validate();
+        if (!form.IsValid || currentItem == null) return;
+
+        // Logic: Nếu chuyển từ Character -> Weapon thì xóa Nguyên tố đi
+        if (currentItem.Type == ItemType.weapon)
+        {
+            currentItem.Element = ElementType.none;
+        }
+
+        // Gọi Service cập nhật
+        await GachaService.UpdateItemAsync(currentItem);
+        NavManager.NavigateTo("/items");
+    }
+
+    private async Task DeleteConfirm()
+    {
+        // Hiện Dialog xác nhận
+        bool? result = await DialogService.ShowMessageBox(
+            "CẢNH BÁO XÓA",
+            $"Bạn có chắc chắn muốn xóa '{currentItem?.Name}' không?\nHành động này không thể hoàn tác.",
+            yesText: "Xóa luôn!", cancelText: "Suy nghĩ lại");
+
+        if (result == true)
+        {
+            await GachaService.DeleteItemAsync(Id);
+            NavManager.NavigateTo("/items");
+        }
+    }
+
+    private void GoBack() => NavManager.NavigateTo("/items");
+
+    // Hàm lấy ảnh Icon (Copy từ trang AddItem sang)
+    private string GetElementImageUrl(ElementType? type)
+    {
+        return type switch
+        {
+            ElementType.pyro => "https://api.hakush.in/gi/UI/Pyro.webp",
+            ElementType.hydro => "https://api.hakush.in/gi/UI/Hydro.webp",
+            ElementType.anemo => "https://api.hakush.in/gi/UI/Anemo.webp",
+            ElementType.electro => "https://api.hakush.in/gi/UI/Electro.webp",
+            ElementType.dendro => "https://api.hakush.in/gi/UI/Dendro.webp",
+            ElementType.cryo => "https://api.hakush.in/gi/UI/Cryo.webp",
+            ElementType.geo => "https://api.hakush.in/gi/UI/Geo.webp",
+            _ => ""
+        };
+    }
+}

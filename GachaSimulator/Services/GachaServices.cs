@@ -28,9 +28,28 @@ public class GachaService
         await _context.SaveChangesAsync();
     }
 
+    public async Task<Models.Items?> GetItemByIdAsync(int id)
+    {
+        return await _context.Items.FindAsync(id);
+    }
+
+    public async Task UpdateItemAsync(Models.Items item)
+    {
+        _context.Items.Update(item);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteItemAsync(int id)
+    {
+        var item = await _context.Items.FindAsync(id);
+        if (item != null)
+        {
+            _context.Items.Remove(item);
+            await _context.SaveChangesAsync();
+        }
+    }
+
     //logic gacha
-
-
     public async Task<List<WishHistory>> RollBannerAsync(int bannerId, int times)
     {
         var results = new List<WishHistory>();
@@ -137,9 +156,9 @@ public class GachaService
     private int DetermineRarity(int pity5, int pity4)
     {
         // 1. Check 5 Sao (Hard Pity 90)
-        double rate5 = 0.006; // 0.6%
-        if (pity5 >= 74) rate5 += (pity5 - 73) * 0.06; // Soft Pity: Mỗi lần tăng 6%
-        if (pity5 >= 90) rate5 = 1.0; // Hard Pity: 100%
+        double rate5 = 0.006;
+        if (pity5 >= 74) rate5 += (pity5 - 73) * 0.06;
+        if (pity5 >= 90) rate5 = 1.0;
 
         if (_random.NextDouble() < rate5) return 5;
 
@@ -149,7 +168,8 @@ public class GachaService
 
         if (_random.NextDouble() < rate4) return 4;
 
-        // 3. Còn lại là 3 sao
         return 3;
     }
+
+
 }
