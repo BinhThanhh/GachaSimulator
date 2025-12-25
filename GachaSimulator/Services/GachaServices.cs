@@ -57,7 +57,7 @@ public class GachaService
 
         if (pityState == null)
         {
-            pityState = new UserPityState { BannerType = BannerType.characterEvent};
+            pityState = new UserPityState { BannerType = BannerType.character};
             _context.UserPityState.Add(pityState);
             await _context.SaveChangesAsync();
         }
@@ -171,5 +171,9 @@ public class GachaService
         return 3;
     }
 
-
+    //Lấy danh sách Banner đang hoạt động
+    public async Task<List<Banner>> GetBannersAsync()
+    {
+        return await _context.Banners.ToListAsync();
+    }
 }

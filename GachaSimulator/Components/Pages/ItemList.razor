@@ -5,61 +5,63 @@
 @inject GachaService GachaService
 @inject NavigationManager NavManager
 
-@* <style>
-    body {
-        background-image: url('https://wishsimulator.app/internal/immutable/assets/wish-background-bc054754.webp');
-        background-repeat: no-repeat;
-        background-size: cover;
+<div class="inventory-bg">
+
+    <div class="d-flex justify-space-between align-center mb-4 px-3">
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.Backpack" Size="Size.Large" Class="mr-3" />
+            <MudText Typo="Typo.h4" Style="font-weight:bold;">Túi Đồ</MudText>
+        </div>
+
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Inherit"
+                       OnClick="@(() => NavManager.NavigateTo("/"))"
+                       Style="background: rgba(0,0,0,0.5); border: 1px solid #fff;" />
+    </div>
+
+    <div class="d-flex gap-4 mb-4 px-3">
+        <MudButton Variant="Variant.Outlined" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Add"
+                   Href="/add-item" Class="rounded-pill">
+            Thêm Vật Phẩm
+        </MudButton>
+    </div>
+
+    @if (items == null)
+    {
+        <div class="d-flex justify-center align-center" style="height: 50vh;">
+            <MudProgressCircular Color="Color.Info" Indeterminate="true" />
+        </div>
     }
-</style> *@
+    else
+    {
+        <div class="genshin-grid">
+            @foreach (var item in items)
+            {
+                <div class="item-slot"
+                     style="@GetBackgroundStyle(item.Rarity)"
+                     @onclick="@(() => EditItem(item.Id))">
 
-<MudText Typo="Typo.h3" Color="Color.Primary" GutterBottom="true">Kho Dữ Liệu</MudText>
+                    <img src="@item.ImageUrl" class="slot-image" />
 
-@if (items == null)
-{
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-}
-else
-{
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Href="/add-item" Class="mb-4">
-        Thêm Item Mới
-    </MudButton>
-    <MudGrid>
-        @foreach (var item in items)
-        {
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="3" Class="h-100 hover-effect" Style="cursor: pointer;"
-                         @onclick="@(() => EditItem(item.Id))">
-                    <MudCardMedia Image="@item.ImageUrl" Height="200" Style="background-size:contain; background-position: center;" />
-                    <MudCardContent>
-                        <MudText Typo="Typo.h6" Align="Align.Center">@item.Name</MudText>
-
-                        <div class="d-flex justify-center mt-2 align-center gap-2">
-                            <MudChip T="string" Color="@GetColor(item.Rarity)" Size="Size.Small">@item.Rarity ⭐</MudChip>
-
-                            @if (item.Element != ElementType.none)
-                            {
-                                <MudTooltip Text="@item.Element.ToString()">
-                                    <MudAvatar Style="@($"background-color: {GetElementBackgroundColor(item.Element)}; width:32px; height:32px;")">
-                                        <MudImage Src="@GetElementImageUrl(item.Element)" Width="25" Height="25" ObjectFit="ObjectFit.Contain" />
-                                    </MudAvatar>
-                                </MudTooltip>
-                            }
+                    @if (item.Element != ElementType.none)
+                    {
+                        <div style="position:absolute; top:4px; left:4px;">
+                            <MudImage Src="@GetElementImageUrl(item.Element)" Width="20" Height="20" />
                         </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        }
-    </MudGrid>
-}
+                    }
 
-<style>
-    .hover-effect:hover {
-        transform: translateY(-5px);
-        transition: transform 0.3s ease;
-        border: 2px solid #FFD700;
+                    <div class="slot-stars">
+                        @for (int i = 0; i < item.Rarity; i++)
+                        {
+                            <span class="star-icon">★</span>
+                        }
+                    </div>
+
+                    <div class="slot-name">@item.Name</div>
+                </div>
+            }
+        </div>
     }
-</style>
+</div>
 
 @code {
     private List<Items>? items;
@@ -71,36 +73,32 @@ else
 
     private void EditItem(int id)
     {
-        // Chuyển sang trang Edit kèm theo ID
         NavManager.NavigateTo($"/edit-item/{id}");
     }
 
-    private Color GetColor(int rarity) => rarity == 5 ? Color.Warning : (rarity == 4 ? Color.Secondary : Color.Default);
-
-    private string GetElementImageUrl(ElementType? type)
+    // --- HÀM QUAN TRỌNG: CHỈNH ẢNH NỀN THEO ĐỘ HIẾM ---
+    private string GetBackgroundStyle(int rarity)
     {
-        return type switch
-        {
-            ElementType.pyro => $"https://api.hakush.in/gi/UI/Pyro.webp",
-            ElementType.hydro => $"https://api.hakush.in/gi/UI/Hydro.webp",
-            ElementType.anemo => $"https://api.hakush.in/gi/UI/Anemo.webp",
-            ElementType.electro => $"https://api.hakush.in/gi/UI/Electro.webp",
-            ElementType.dendro => $"https://api.hakush.in/gi/UI/Dendro.webp",
-            ElementType.cryo => $"https://api.hakush.in/gi/UI/Cryo.webp",
-            ElementType.geo => $"https://api.hakush.in/gi/UI/Geo.webp",
-            _ => ""
+        return rarity switch {
+            5 => "background: linear-gradient(to bottom, #a37a40, #3b4255); border-bottom: 3px solid #dca452;",
+            4 => "background: linear-gradient(to bottom, #7e6096, #3b4255); border-bottom: 3px solid #9c7dd6;",
+            _ => "background: linear-gradient(to bottom, #4a6c8c, #3b4255); border-bottom: 3px solid #4a6c8c;"
         };
     }
 
-    private string GetElementBackgroundColor(ElementType? type) => type switch
+    private string GetElementImageUrl(ElementType? type)
     {
-        ElementType.pyro => "rgba(255, 69, 0, 0.2)",   // Đỏ nhạt
-        ElementType.hydro => "rgba(0, 191, 255, 0.2)", // Xanh dương nhạt
-        ElementType.electro => "rgba(138, 43, 226, 0.2)", // Tím nhạt
-        ElementType.dendro => "rgba(50, 205, 50, 0.2)", // Xanh lá nhạt
-        ElementType.anemo => "rgba(64, 224, 208, 0.2)", // Xanh ngọc nhạt
-        ElementType.cryo => "rgba(224, 255, 255, 0.5)", // Trắng xanh
-        ElementType.geo => "rgba(218, 165, 32, 0.2)",   // Vàng đất nhạt
-        _ => "transparent"
-    };
+        // Giữ nguyên hàm lấy icon Vision từ API
+        return type switch
+        {
+            ElementType.pyro => "https://api.hakush.in/gi/UI/Pyro.webp",
+            ElementType.hydro => "https://api.hakush.in/gi/UI/Hydro.webp",
+            ElementType.anemo => "https://api.hakush.in/gi/UI/Anemo.webp",
+            ElementType.electro => "https://api.hakush.in/gi/UI/Electro.webp",
+            ElementType.dendro => "https://api.hakush.in/gi/UI/Dendro.webp",
+            ElementType.cryo => "https://api.hakush.in/gi/UI/Cryo.webp",
+            ElementType.geo => "https://api.hakush.in/gi/UI/Geo.webp",
+            _ => ""
+        };
+    }
 }
