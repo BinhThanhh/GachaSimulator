@@ -1,0 +1,125 @@
+﻿@page "/edit-banner/{Id:int}"
+@rendermode InteractiveServer
+@using GachaSimulator.Models
+@using GachaSimulator.Services
+@inject GachaService GachaService
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-5 mb-5">
+    @if (currentBanner == null)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudCard Elevation="3">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5" Color="Color.Info">✏️ Chỉnh Sửa Banner</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+
+            <MudCardContent>
+                <MudForm @ref="form">
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudStack Spacing="3">
+                                <MudTextField Label="Tên Banner" @bind-Value="currentBanner.Name" Variant="Variant.Outlined" />
+
+                                <div class="d-flex justify-center my-2">
+                                    <MudImage Src="@currentBanner.ImageUrl" Height="80" ObjectFit="ObjectFit.Cover" Class="rounded-lg" />
+                                </div>
+
+                                <MudTextField Label="Ảnh Lớn" @bind-Value="currentBanner.ImageUrl" Variant="Variant.Outlined" />
+                                <MudTextField Label="Icon Tròn" @bind-Value="currentBanner.IconUrl" Variant="Variant.Outlined" />
+
+                                <MudSelect Label="Loại" @bind-Value="currentBanner.Type" Variant="Variant.Outlined">
+                                    @foreach (BannerType t in Enum.GetValues(typeof(BannerType)))
+                                    {
+                                        <MudSelectItem Value="@t">@t</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudStack>
+                        </MudItem>
+
+                        <MudItem xs="12" md="8">
+                            <MudText Typo="Typo.h6" Class="mb-2">Danh sách Rate Up</MudText>
+
+                            <MudTable Items="@allItems" MultiSelection="true" @bind-SelectedItems="selectedItems"
+                                      Height="400px" FixedHeader="true" Hover="true" Dense="true" Bordered="true">
+                                <HeaderContent>
+                                    <MudTh>Ảnh</MudTh>
+                                    <MudTh>Tên</MudTh>
+                                    <MudTh>Sao</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd><MudImage Src="@context.ImageUrl" Width="30" Height="30" /></MudTd>
+                                    <MudTd>@context.Name</MudTd>
+                                    <MudTd>@context.Rarity ⭐</MudTd>
+                                </RowTemplate>
+                                <PagerContent>
+                                    <MudTablePager />
+                                </PagerContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudForm>
+            </MudCardContent>
+
+            <MudCardActions Class="justify-space-between pa-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteConfirm">Xóa</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="UpdateBanner">Lưu Thay Đổi</MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Banner? currentBanner;
+    MudForm form;
+
+    private List<Items> allItems = new();
+    private HashSet<Items> selectedItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentBanner = await GachaService.GetBannerByIdAsync(Id);
+        allItems = await GachaService.GetAllItemsAsync();
+
+        if (currentBanner != null)
+        {
+            var currentRateUpItems = currentBanner.BannerRateUps.Select(x => x.Item).ToList();
+
+            foreach (var item in allItems)
+            {
+                if (currentRateUpItems.Any(x => x.Id == item.Id))
+                {
+                    selectedItems.Add(item);
+                }
+            }
+        }
+    }
+
+    private async Task UpdateBanner()
+    {
+        await form.Validate();
+        if (currentBanner == null) return;
+
+        var newRateUpIds = selectedItems.Select(x => x.Id).ToList();
+
+        await GachaService.UpdateBannerAsync(currentBanner, newRateUpIds);
+        NavManager.NavigateTo("/banners");
+    }
+
+    private async Task DeleteConfirm()
+    {
+        bool? result = await DialogService.ShowMessageBox("Xóa Banner", "Bạn chắc chưa?", yesText: "Xóa", cancelText: "Hủy");
+        if (result == true)
+        {
+            await GachaService.DeleteBannerAsync(Id);
+            NavManager.NavigateTo("/banners");
+        }
+    }
+}

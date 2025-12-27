@@ -171,9 +171,62 @@ public class GachaService
         return 3;
     }
 
-    //Lấy danh sách Banner đang hoạt động
     public async Task<List<Banner>> GetBannersAsync()
     {
-        return await _context.Banners.ToListAsync();
+        return await _context.Banners
+        .Include(b => b.BannerRateUps)
+            .ThenInclude(bru => bru.Item)
+            .ToListAsync();
+    }
+
+    public async Task<Banner?> GetBannerByIdAsync(int id)
+    {
+        return await _context.Banners
+            .Include(b => b.BannerRateUps)
+            .ThenInclude(br => br.Item)
+            .FirstOrDefaultAsync(b => b.Id == id);
+    }
+
+    public async Task AddBannerAsync(Banner banner, List<int> rateUpItemIds)
+    {
+        foreach (var itemId in rateUpItemIds)
+        {
+            banner.BannerRateUps.Add(new BannerRateUp { ItemId = itemId });
+        }
+        _context.Banners.Add(banner);
+        await _context.SaveChangesAsync();
+    }
+    public async Task UpdateBannerAsync(Banner banner, List<int> rateUpItemIds)
+    {
+        var existingBanner = await _context.Banners
+            .Include(b => b.BannerRateUps)
+            .FirstOrDefaultAsync(b => b.Id == banner.Id);
+
+        if (existingBanner != null)
+        {
+            existingBanner.Name = banner.Name;
+            existingBanner.ImageUrl = banner.ImageUrl;
+            existingBanner.IconUrl = banner.IconUrl;
+            existingBanner.Type = banner.Type;
+
+            _context.BannerRateUps.RemoveRange(existingBanner.BannerRateUps);
+
+            foreach (var itemId in rateUpItemIds)
+            {
+                existingBanner.BannerRateUps.Add(new BannerRateUp { ItemId = itemId });
+            }
+
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task DeleteBannerAsync(int id)
+    {
+        var banner = await _context.Banners.FindAsync(id);
+        if (banner != null)
+        {
+            _context.Banners.Remove(banner);
+            await _context.SaveChangesAsync();
+        }
     }
 }

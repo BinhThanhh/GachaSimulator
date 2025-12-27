@@ -2,20 +2,18 @@
 @rendermode InteractiveServer
 @using GachaSimulator.Services
 @using GachaSimulator.Models
+@using System.Text.RegularExpressions
+@inject IJSRuntime JS
 @inject GachaService GachaService
 @inject IDialogService DialogService
 @inject NavigationManager NavManager
 
 <div class="genshin-bg">
     <div class="genshin-top-menu">
-        <MudTooltip Text="Sự kiện"><div class="menu-icon-circle"><MudIcon Icon="@Icons.Material.Filled.Explore" /></div></MudTooltip>
+        <MudTooltip Text="Sự kiện"><div class="menu-icon-circle" @onclick='() => NavManager.NavigateTo("/banners")'><MudIcon Icon="@Icons.Material.Filled.Explore" /></div></MudTooltip>
         <MudTooltip Text="Nhật ký"><div class="menu-icon-circle"><MudIcon Icon="@Icons.Material.Filled.Forest" /></div></MudTooltip>
         <MudTooltip Text="Cầu nguyện"><div class="menu-icon-circle" style="background: #ECE5D8;"><MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="color: #333;" /></div></MudTooltip>
-        <MudTooltip Text="Túi đồ">
-            <div class="menu-icon-circle" @onclick='() => NavManager.NavigateTo("/items")'>
-                <MudIcon Icon="@Icons.Material.Filled.Backpack" />
-            </div>
-        </MudTooltip>
+        <MudTooltip Text="Túi đồ"><div class="menu-icon-circle" @onclick='() => NavManager.NavigateTo("/items")'><MudIcon Icon="@Icons.Material.Filled.Backpack" /></div></MudTooltip>
     </div>
 
     <div class="gacha-container">
@@ -29,17 +27,39 @@
             <div class="banner-tabs">
                 @foreach (var banner in banners)
                 {
-                    <img src="@banner.IconUrl"
-                         class="banner-tab-icon @(selectedBanner?.Id == banner.Id ? "active" : "")"
-                         @onclick="() => SelectBanner(banner)"
-                         title="@banner.Name" />
+                    bool isActive = selectedBanner?.Id == banner.Id;
+
+                    <div class="banner-tab-wrapper @(isActive ? "active" : "")"
+                         @onclick="() => SelectBanner(banner)">
+
+                        <div class="tab-mask">
+                            <img src="@banner.IconUrl" class="tab-icon-face" alt="@banner.Name" />
+                        </div>
+
+                    </div>
                 }
             </div>
 
             <div class="banner-display">
-                @if (selectedBanner != null)
+                @if (selectedBanner.BannerRateUps != null && selectedBanner != null)
                 {
-                    <img src="@selectedBanner.ImageUrl" class="banner-image" key="@selectedBanner.Id" />
+                    <div class="banner-bg-desc" style="background-color: @GetThemeColorFromText(selectedBanner.Name, 0.9f);;"></div>
+                    <p class="banner-text-desc-uprate-noti">
+                        Probability increased!
+                    </p>
+                    <p class="banner-text-desc-uprate">
+                        Every 10 wishes is guaranteed to include at least one 4-star or higher item.
+                    </p>
+                    <p class="banner-text-desc">5-Star event-exclusive characters can only
+                        be obtained in the specified wish during the 
+                        specified time period(s). View Details for 
+                        more.</p>
+                    @foreach (var rateUp in selectedBanner.BannerRateUps.OrderByDescending(x => x.Item.Rarity))
+                    {
+                        <p class="char-name-rateup">@rateUp.Item.Name</p>
+                    }
+                    <p class='banner-name'>@ParseUnityText(@selectedBanner.Name)</p>
+                    <img src="@selectedBanner.ImageUrl" @ref="bannerImageRef" @onload="OnBannerImageLoaded" crossorigin="anonymous" class="banner-image" key="@selectedBanner.Id" />
                 }
             </div>
 
@@ -50,7 +70,7 @@
             </div>
 
             <div class="gacha-controls">
-                <button class="wish-btn" @onclick="() => Roll(1)">
+                <button class="wish-btn">
                     <div>Cầu Nguyện x1</div>
                     <div class="currency-row">
                         <MudImage Src="https://api.hakush.in/gi/UI/UI_ItemIcon_223.webp" Width="35" Height="35" Class="mr-1" />
@@ -58,7 +78,7 @@
                     </div>
                 </button>
 
-                <button class="wish-btn" @onclick="() => Roll(10)">
+                <button class="wish-btn">
                     <div>Cầu Nguyện x10</div>
                     <div class="currency-row">
                         <MudImage Src="https://api.hakush.in/gi/UI/UI_ItemIcon_223.webp" Width="35" Height="35" Class="mr-1" />
@@ -74,6 +94,8 @@
     private List<Banner>? banners;
     private Banner? selectedBanner;
     private bool isRolling = false;
+    private string currentBorderColor = "transparent";
+    private ElementReference bannerImageRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,7 +111,26 @@
 
     private void SelectBanner(Banner banner)
     {
+        currentBorderColor = "transparent";
         selectedBanner = banner;
+    }
+
+    private async Task OnBannerImageLoaded()
+    {
+        try
+        {
+            var rgbColor = await JS.InvokeAsync<string>("imageHelpers.getDominantColor", bannerImageRef);
+
+            if (!string.IsNullOrEmpty(rgbColor) && rgbColor != "transparent")
+            {
+                currentBorderColor = rgbColor;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Nếu lỗi (ví dụ ảnh chưa kịp render) thì bỏ qua
+            Console.WriteLine($"Lỗi lấy màu: {ex.Message}");
+        }
     }
 
     private async Task Roll(int times)
@@ -106,4 +147,38 @@
 
         isRolling = false;
     }
+
+    private MarkupString ParseUnityText(string unityText)
+    {
+        if (string.IsNullOrEmpty(unityText)) return new MarkupString("");
+        // Pattern này bắt bất kỳ thứ gì sau dấu bằng trong thẻ color
+        string html = Regex.Replace(unityText, @"<color=(.*?)>", "<span style=\"color:$1\">");
+        html = html.Replace("</color>", "</span>");
+        return new MarkupString(html);
+    }
+
+    private string GetThemeColorFromText(string unityText, float opacity = 0.85f)
+    {
+        if (string.IsNullOrEmpty(unityText)) return "rgba(0, 0, 0, 0.8)";
+
+        var match = Regex.Match(unityText, @"<color=(#[a-fA-F0-9]{6})>");
+
+        if (match.Success)
+        {
+            try
+            {
+                string hexColor = match.Groups[1].Value;
+                var color = System.Drawing.ColorTranslator.FromHtml(hexColor);
+
+                return $"rgba({color.R}, {color.G}, {color.B}, {opacity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)})";
+            }
+            catch
+            {
+                
+            }
+        }
+
+        return "rgba(30, 30, 40, 0.9)";
+    }
+}
 }

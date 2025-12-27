@@ -1,0 +1,105 @@
+﻿@page "/add-banner"
+@rendermode InteractiveServer
+@using GachaSimulator.Models
+@using GachaSimulator.Services
+@inject GachaService GachaService
+@inject NavigationManager NavManager
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-5 mb-5">
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Color="Color.Info">✨ Tạo Banner Mới</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+
+        <MudCardContent>
+            <MudForm @ref="form">
+                <MudGrid>
+                    <MudItem xs="12" md="3">
+                        <MudStack Spacing="3">
+                            <MudTextField Label="Tên Banner" @bind-Value="newBanner.Name" Required="true" Variant="Variant.Outlined" />
+                            <MudTextField Label="Ảnh Lớn (ImageUrl)" @bind-Value="newBanner.ImageUrl" Variant="Variant.Outlined" />
+                            <MudTextField Label="Icon Tròn (IconUrl)" @bind-Value="newBanner.IconUrl" Variant="Variant.Outlined" />
+
+                            <MudSelect Label="Loại Banner" @bind-Value="newBanner.Type" Variant="Variant.Outlined">
+                                @foreach (BannerType t in Enum.GetValues(typeof(BannerType)))
+                                {
+                                    <MudSelectItem Value="@t">@t</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudStack>
+                    </MudItem>
+
+                    <MudItem xs="12" md="8">
+                        <MudText Typo="Typo.h6" Class="mb-2">Chọn Item Rate Up</MudText>
+
+                        <MudTable Items="@allItems" MultiSelection="true" @bind-SelectedItems="selectedItems"
+                                  Height="400px" FixedHeader="true" Hover="true" Dense="true" Striped="true" Bordered="true">
+                            <HeaderContent>
+                                <MudTh>Ảnh</MudTh>
+                                <MudTh>Tên</MudTh>
+                                <MudTh>Sao</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd><MudImage Src="@context.ImageUrl" Width="30" Height="30" /></MudTd>
+                                <MudTd>@context.Name</MudTd>
+                                <MudTd>
+                                    @if (context.Rarity == 5)
+                                    {
+                                        <span style="color:#FFD700">⭐⭐⭐⭐⭐</span>
+                                    }
+                                    else if (context.Rarity == 4)
+                                    {
+
+                                        <span style="color:#A467D8">⭐⭐⭐⭐</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span>⭐⭐⭐</span>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager />
+                            </PagerContent>
+                        </MudTable>
+
+                        <MudText Class="mt-2" Color="Color.Success">Đã chọn: @selectedItems.Count item</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+
+        <MudCardActions Class="justify-end pa-4">
+            <MudButton Variant="Variant.Text" OnClick="Cancel">Hủy</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveBanner" Class="ml-2">Lưu lại</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private Banner newBanner = new Banner();
+    MudForm form;
+    private List<Items> allItems = new();
+    private HashSet<Items> selectedItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allItems = await GachaService.GetAllItemsAsync();
+    }
+
+    private async Task SaveBanner()
+    {
+        await form.Validate();
+        if (!form.IsValid) return;
+
+        var rateUpIds = selectedItems.Select(x => x.Id).ToList();
+
+        await GachaService.AddBannerAsync(newBanner, rateUpIds);
+        NavManager.NavigateTo("/banners");
+    }
+
+    private void Cancel() => NavManager.NavigateTo("/banners");
+}

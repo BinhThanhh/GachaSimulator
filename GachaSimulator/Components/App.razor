@@ -19,6 +19,24 @@
     <Routes @rendermode="InteractiveServer" />
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_framework/blazor.web.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.4.0/color-thief.umd.min.js"></script>
+    <script>
+        window.imageHelpers = {
+            getDominantColor: function (imgEl) {
+                try {
+                    // Nếu ảnh chưa tải xong thì không làm gì
+                    if (!imgEl.complete) return "transparent";
+
+                    const colorThief = new ColorThief();
+                    const rgb = colorThief.getColor(imgEl);
+                    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                } catch (e) {
+                    console.log("Lỗi lấy màu (có thể do CORS):", e);
+                    return "transparent";
+                }
+            }
+        };
+    </script>
 </body>
 
 </html>

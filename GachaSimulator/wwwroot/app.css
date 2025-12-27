@@ -55,22 +55,19 @@ h1:focus {
     text-align: start;
 }
 
-/* 1. KHAI BÁO FONT MỚI */
 @font-face {
     font-family: 'GenshinFont';
     src: url('fonts/ja-jp.ttf') format('truetype');
 }
 
-/* 2. ÁP DỤNG FONT CHO TOÀN BỘ WEB */
-body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
+body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-name-rateup, .banner-name, .banner-text-desc-uprate, .banner-text-desc-uprate-noti {
     font-family: 'GenshinFont', 'Segoe UI', sans-serif !important;
 }
 
 /* --- GENSHIN UI THEME --- */
 
-/* 1. Nền bầu trời (Background) */
 .genshin-bg {
-    background-image: url("images/wish-background-bc054754.webp"); /* Màu giả lập trời tối */
+    background-image: url("images/wish-background-bc054754.webp");
     background-size: cover;
     height: 100vh;
     width: 100vw;
@@ -82,11 +79,11 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* 2. Thanh Menu Top-Right (Ảnh 1) */
+/* 2. Thanh Menu Top-Right */
 .genshin-top-menu {
     position: absolute;
     top: 20px;
-    right: 40px;
+    left: 40px;
     display: flex;
     gap: 15px;
     align-items: center;
@@ -113,7 +110,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
     }
 
         .menu-icon-circle:hover .mud-icon-root {
-            color: #333 !important; /* Đổi màu icon sang đen khi hover */
+            color: #333 !important;
         }
 
 /* 3. Banner Gacha Chính */
@@ -123,7 +120,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-top: 60px; /* Trừa chỗ cho thanh menu */
+    padding-top: 60px;
 }
 
 .banner-display {
@@ -132,15 +129,81 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
     justify-content: center;
     align-items: center;
     position: relative;
-    padding: 0 5%;
+    margin-top: -160px;
+    position: relative;
+}
+
+.banner-text-desc {
+    position: absolute;
+    color: #303030;
+    width: 20%;
+    text-shadow: 1px 1px 2px #fff;
+    white-space: normal;
+    word-wrap: break-word;
+    text-overflow: ellipsis;
+    margin-top: 200px;
+    margin-left: -600px;
+}
+
+.banner-text-desc-uprate {
+    position: absolute;
+    color: #fff;
+    width: 20%;
+    white-space: normal;
+    word-wrap: break-word;
+    text-overflow: ellipsis;
+    margin-top: -10px;
+    margin-left: -560px;
+}
+
+.banner-text-desc-uprate-noti {
+    position: absolute;
+    color: #303030;
+    width: 20%;
+    font-size: 24px;
+    white-space: normal;
+    word-wrap: break-word;
+    text-overflow: ellipsis;
+    margin-top: -120px;
+    margin-left: -600px;
+}
+
+.banner-bg-desc {
+    position: absolute;
+    width: 400px;
+    height: 60px;
+    padding: 15px;
+    margin-top: -30px;
+    margin-left: -580px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.char-name-rateup {
+    position: absolute;
+    font-size: 34px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    margin-top: 290px;
+    margin-left: 140px;
+}
+
+.banner-name {
+    position: absolute;
+    font-size: 50px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    margin-top: -350px;
+    margin-left: -220px;
+    white-space: normal;
+    word-wrap: break-word;
+    text-overflow: ellipsis;
+    width: 40%;
 }
 
 .banner-image {
     max-width: 100%;
     max-height: 75vh;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    /* Hiệu ứng hoạt ảnh xuất hiện */
     animation: fadeIn 0.5s ease-out;
 }
 
@@ -148,29 +211,54 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button {
 .banner-tabs {
     display: flex;
     justify-content: center;
-    gap: 20px;
-    margin-bottom: 10px;
+    gap: 12px;
+    z-index: 10;
 }
 
-.banner-tab-icon {
-    width: 60px;
-    height: 60px;
-    opacity: 0.6;
+.banner-tab-wrapper {
+    width: 131px;
+    height: 81px;
+    background-image: url('images/UI_MichiaeMatsuri_FacePage_Tab_Bg.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    transition: all 0.3s;
-    border: 2px solid transparent;
-    border-radius: 50%;
+    opacity: 0.6;
+    transition: all 0.3s ease;
 }
 
-    .banner-tab-icon.active {
+    .banner-tab-wrapper.active {
         opacity: 1;
         transform: scale(1.1);
-        border-color: #fff;
-        background: rgba(255,255,255,0.1);
-        box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
     }
 
-/* 5. Nút Bấm Quay (Bottom Right) - GIỐNG Y SÌ GAME */
+.tab-mask {
+    width: 110px;
+    height: 51px;
+    overflow: hidden;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tab-icon-face {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+/*    margin-top: 90px;
+    margin-right: 50px;*/
+    transition: transform 0.3s ease;
+}
+
+.banner-tab-wrapper:hover .tab-icon-face {
+    transform: scale(1.1);
+}
+
 .gacha-controls {
     position: absolute;
     bottom: 20px;
