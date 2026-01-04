@@ -152,18 +152,16 @@ public class GachaService
         return history;
     }
 
-    // Thuật toán tính tỉ lệ (Probability)
+    // Thuật toán tính tỉ lệ
     private int DetermineRarity(int pity5, int pity4)
     {
-        // 1. Check 5 Sao (Hard Pity 90)
         double rate5 = 0.006;
         if (pity5 >= 74) rate5 += (pity5 - 73) * 0.06;
         if (pity5 >= 90) rate5 = 1.0;
 
         if (_random.NextDouble() < rate5) return 5;
 
-        // 2. Check 4 Sao (Hard Pity 10)
-        double rate4 = 0.051; // 5.1%
+        double rate4 = 0.051;
         if (pity4 >= 10) rate4 = 1.0;
 
         if (_random.NextDouble() < rate4) return 4;

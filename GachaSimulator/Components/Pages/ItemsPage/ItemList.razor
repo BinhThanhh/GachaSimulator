@@ -76,7 +76,6 @@
         NavManager.NavigateTo($"/edit-item/{id}");
     }
 
-    // --- HÀM QUAN TRỌNG: CHỈNH ẢNH NỀN THEO ĐỘ HIẾM ---
     private string GetBackgroundStyle(int rarity)
     {
         return rarity switch {
@@ -88,7 +87,6 @@
 
     private string GetElementImageUrl(ElementType? type)
     {
-        // Giữ nguyên hàm lấy icon Vision từ API
         return type switch
         {
             ElementType.pyro => "https://api.hakush.in/gi/UI/Pyro.webp",

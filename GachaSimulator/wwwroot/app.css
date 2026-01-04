@@ -247,11 +247,10 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 }
 
 .tab-icon-face {
-    width: 100%;
-    height: 100%;
+    width: 120%;
+    height: auto;
     object-fit: cover;
-/*    margin-top: 90px;
-    margin-right: 50px;*/
+    margin-top: 20px;
     transition: transform 0.3s ease;
 }
 
@@ -268,7 +267,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 }
 
 .wish-btn {
-    background-image: url("images/button-4401ab60.webp"); /* Màu be sáng */
+    background-image: url("images/button-4401ab60.webp");
     color: #A8A8A8;
     padding: 10px 30px;
     font-weight: bold;
@@ -283,7 +282,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 }
 
     .wish-btn:active {
-        transform: translateY(4px); /* Hiệu ứng nhấn xuống */
+        transform: translateY(4px); 
         box-shadow: none;
     }
 
@@ -292,7 +291,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
         align-items: center;
         font-size: 14px;
         margin-top: 2px;
-        color: #C55D62; /* Màu đỏ của số tiền thiếu (hoặc màu thường) */
+        color: #C55D62;
     }
 
 /* 6. Footer Trái (Shop, History) */
@@ -335,9 +334,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 
 /* 1. Nền tổng thể của trang Túi Đồ */
 .inventory-bg {
-    background-color: rgba(0, 0, 0, 0.85); /* Màu tối mờ */
-    /* Nếu bạn có ảnh nền túi đồ, bỏ comment dòng dưới và sửa tên file */
-    /* background-image: url('images/bg_inventory.png'); */
+    background-color: rgba(0, 0, 0, 0.85);
     background-size: cover;
     min-height: 100vh;
     padding: 20px;
@@ -348,32 +345,31 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 /* 2. Lưới hiển thị Item (Grid) */
 .genshin-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Tự động chia cột, mỗi ô nhỏ nhất 160px */
-    gap: 15px; /* Khoảng cách giữa các ô */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
     padding: 10px;
     max-height: 80vh;
-    overflow-y: auto; /* Cho phép cuộn dọc nếu danh sách dài */
+    overflow-y: auto;
 }
 
-    /* Tùy chỉnh thanh cuộn cho giống game */
-    .genshin-grid::-webkit-scrollbar {
-        width: 6px;
-    }
+.genshin-grid::-webkit-scrollbar {
+    width: 6px;
+}
 
-    .genshin-grid::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.3);
-    }
+.genshin-grid::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.3);
+}
 
-    .genshin-grid::-webkit-scrollbar-thumb {
-        background: #ECE5D8;
-        border-radius: 3px;
-    }
+.genshin-grid::-webkit-scrollbar-thumb {
+    background: #ECE5D8;
+    border-radius: 3px;
+}
 
 /* 3. Ô Vật Phẩm (Item Slot) */
 .item-slot {
     position: relative;
-    aspect-ratio: 1 / 1.2; /* Tỷ lệ khung hình chữ nhật đứng nhẹ */
-    border-radius: 8px; /* Bo góc */
+    aspect-ratio: 1 / 1.2;
+    border-radius: 8px;
     cursor: pointer;
     transition: transform 0.1s, border 0.1s;
     overflow: hidden;
@@ -384,12 +380,11 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 
     .item-slot:hover {
         transform: scale(1.05);
-        border-color: #ECE5D8; /* Viền sáng khi rê chuột */
+        border-color: #ECE5D8;
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
     }
 
-/* 4. Màu nền theo độ hiếm (CSS Fallback nếu chưa có ảnh) */
-/* Nếu bạn có ảnh local, hãy sửa trong file Razor bên dưới */
+/* 4. Màu nền theo độ hiếm */
 .rarity-bg-3 {
     background: linear-gradient(to bottom, #4a6c8c, #3b4255);
     border-bottom: 3px solid #4a6c8c;
@@ -409,12 +404,12 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 .slot-image {
     width: 70%;
     height: 70%;
-    object-fit:cover; /* Đảm bảo ảnh item nằm gọn */
+    object-fit:cover;
     margin-top: 12px;
     margin-left: 24px;
 }
 
-/* 6. Tên Item (Nằm dưới cùng) */
+/* 6. Tên Item */
 .slot-name {
     position: absolute;
     bottom: 0;
@@ -431,7 +426,7 @@ body, .mud-typography, h1, h2, h3, h4, h5, h6, button, .banner-text-desc, .char-
 /* 7. Ngôi sao */
 .slot-stars {
     position: absolute;
-    bottom: 27px; /* Nằm trên tên */
+    bottom: 27px;
     width: 100%;
     display: flex;
     justify-content: center;

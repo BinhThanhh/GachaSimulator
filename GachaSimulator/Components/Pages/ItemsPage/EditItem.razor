@@ -99,10 +99,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Load dữ liệu từ DB dựa vào ID trên URL
         currentItem = await GachaService.GetItemByIdAsync(Id);
-
-        // Nếu không tìm thấy (VD: Gõ ID linh tinh), quay về trang list
         if (currentItem == null)
         {
             NavManager.NavigateTo("/items");
@@ -113,21 +110,16 @@
     {
         await form.Validate();
         if (!form.IsValid || currentItem == null) return;
-
-        // Logic: Nếu chuyển từ Character -> Weapon thì xóa Nguyên tố đi
         if (currentItem.Type == ItemType.weapon)
         {
             currentItem.Element = ElementType.none;
         }
-
-        // Gọi Service cập nhật
         await GachaService.UpdateItemAsync(currentItem);
         NavManager.NavigateTo("/items");
     }
 
     private async Task DeleteConfirm()
     {
-        // Hiện Dialog xác nhận
         bool? result = await DialogService.ShowMessageBox(
             "CẢNH BÁO XÓA",
             $"Bạn có chắc chắn muốn xóa '{currentItem?.Name}' không?\nHành động này không thể hoàn tác.",
@@ -141,8 +133,6 @@
     }
 
     private void GoBack() => NavManager.NavigateTo("/items");
-
-    // Hàm lấy ảnh Icon (Copy từ trang AddItem sang)
     private string GetElementImageUrl(ElementType? type)
     {
         return type switch

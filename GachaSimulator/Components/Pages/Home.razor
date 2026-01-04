@@ -70,7 +70,7 @@
             </div>
 
             <div class="gacha-controls">
-                <button class="wish-btn">
+                <button class="wish-btn" @onclick="() => Roll(1)">
                     <div>Cầu Nguyện x1</div>
                     <div class="currency-row">
                         <MudImage Src="https://api.hakush.in/gi/UI/UI_ItemIcon_223.webp" Width="35" Height="35" Class="mr-1" />
@@ -78,7 +78,7 @@
                     </div>
                 </button>
 
-                <button class="wish-btn">
+                <button class="wish-btn" @onclick="() => Roll(10)">
                     <div>Cầu Nguyện x10</div>
                     <div class="currency-row">
                         <MudImage Src="https://api.hakush.in/gi/UI/UI_ItemIcon_223.webp" Width="35" Height="35" Class="mr-1" />
@@ -99,10 +99,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //Lấy danh sách từ DB
         banners = await GachaService.GetBannersAsync();
-
-        // 3. Chọn banner đầu tiên làm mặc định
         if (banners.Any())
         {
             selectedBanner = banners.First();
@@ -128,7 +125,6 @@
         }
         catch (Exception ex)
         {
-            // Nếu lỗi (ví dụ ảnh chưa kịp render) thì bỏ qua
             Console.WriteLine($"Lỗi lấy màu: {ex.Message}");
         }
     }
@@ -138,10 +134,7 @@
         if (isRolling || selectedBanner == null) return;
         isRolling = true;
 
-        // Gọi Service quay theo ID của banner đang chọn
         var results = await GachaService.RollBannerAsync(selectedBanner.Id, times);
-
-        // Hiển thị kết quả
         var message = string.Join(", ", results.Select(r => r.Items?.Name ?? "???"));
         await DialogService.ShowMessageBox($"Kết quả: {selectedBanner.Name}", message, yesText: "Xác nhận");
 
@@ -151,7 +144,6 @@
     private MarkupString ParseUnityText(string unityText)
     {
         if (string.IsNullOrEmpty(unityText)) return new MarkupString("");
-        // Pattern này bắt bất kỳ thứ gì sau dấu bằng trong thẻ color
         string html = Regex.Replace(unityText, @"<color=(.*?)>", "<span style=\"color:$1\">");
         html = html.Replace("</color>", "</span>");
         return new MarkupString(html);

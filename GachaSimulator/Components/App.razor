@@ -24,7 +24,6 @@
         window.imageHelpers = {
             getDominantColor: function (imgEl) {
                 try {
-                    // Nếu ảnh chưa tải xong thì không làm gì
                     if (!imgEl.complete) return "transparent";
 
                     const colorThief = new ColorThief();

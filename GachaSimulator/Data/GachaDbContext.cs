@@ -5,7 +5,6 @@ namespace GachaSimulator.Data
 {
     public class GachaDbContext : DbContext
     {
-        //Configure DbContext to use options
         public GachaDbContext(DbContextOptions<GachaDbContext> options) : base(options)
         {
         }
@@ -22,26 +21,22 @@ namespace GachaSimulator.Data
 
             modelBuilder.Entity<Items>(entity =>
             {
-                //HasConversion enum to string for ItemType and ElementType
                 entity.Property(e => e.Type)
                       .HasConversion<string>();
                 entity.Property(e => e.Element)
                       .HasConversion<string>();
             });
 
-            //Configure UserPityState BannerType as string
             modelBuilder.Entity<UserPityState>(entity =>
             {
                 entity.Property(e => e.BannerType).HasConversion<string>();
             });
 
-            //Configure Banner as string
             modelBuilder.Entity<Banner>(entity =>
             {
                 entity.Property(e => e.Type).HasConversion<string>();
             });
 
-            //Configure WishHistory Id as char(36)
             modelBuilder.Entity<WishHistory>(entity =>
             {
                 entity.Property(e => e.Id).HasColumnType("char(36)");
