@@ -148,7 +148,7 @@ public class GachaService
             IsWin5050 = isWin5050
         };
 
-        _context.WishHistories.Add(history);
+        _context.WishHistory.Add(history);
         return history;
     }
 

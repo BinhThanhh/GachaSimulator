@@ -10,7 +10,7 @@ namespace GachaSimulator.Data
         }
 
         public DbSet<Items> Items { get; set; }
-        public DbSet<WishHistory> WishHistories { get; set; }
+        public DbSet<WishHistory> WishHistory { get; set; }
         public DbSet<UserPityState> UserPityState { get; set; } = null!;
         public DbSet<Banner> Banners { get; set; } = null!;
         public DbSet<BannerRateUp> BannerRateUps { get; set; } = null!;
@@ -27,10 +27,10 @@ namespace GachaSimulator.Data
                       .HasConversion<string>();
             });
 
-            modelBuilder.Entity<UserPityState>(entity =>
-            {
-                entity.Property(e => e.BannerType).HasConversion<string>();
-            });
+            //modelBuilder.Entity<UserPityState>(entity =>
+            //{
+            //    entity.Property(e => e.BannerType).HasConversion<string>();
+            //});
 
             modelBuilder.Entity<Banner>(entity =>
             {
