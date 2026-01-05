@@ -1,0 +1,54 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-3">
+            Kết quả: @((MarkupString)BannerNameHtml)
+        </MudText>
+        
+        <MudDivider Class="my-3" />
+        
+        <MudStack Spacing="2">
+            <MudText><strong>Tổng số lượt roll:</strong> @TotalRolls</MudText>
+            <MudText><strong>Lượt roll lần này:</strong> @PityUsed</MudText>
+            <MudText><strong>Pity hiện tại (5⭐):</strong> @CurrentPity5</MudText>
+            <MudText><strong>Pity hiện tại (4⭐):</strong> @CurrentPity4</MudText>
+            @if (IsGuaranteed)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="mt-2">
+                    Bảo hiểm đã kích hoạt - Lần roll 5⭐ tiếp theo chắc chắn là Rate-Up!
+                </MudAlert>
+            }
+        </MudStack>
+        
+        <MudDivider Class="my-3" />
+        
+        <MudText Typo="Typo.h6" Class="mb-2">Kết quả:</MudText>
+        <MudText>@Message</MudText>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    IDialogReference? MudDialog { get; set; }
+    
+    [Parameter] 
+    public string Message { get; set; } = "";
+    
+    [Parameter] 
+    public string BannerNameHtml { get; set; } = "";
+    
+    [Parameter] 
+    public int PityUsed { get; set; }
+    
+    [Parameter]
+    public int TotalRolls { get; set; }
+    
+    [Parameter]
+    public int CurrentPity5 { get; set; }
+    
+    [Parameter]
+    public int CurrentPity4 { get; set; }
+    
+    [Parameter]
+    public bool IsGuaranteed { get; set; }
+}
+

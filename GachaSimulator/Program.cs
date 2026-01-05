@@ -11,11 +11,13 @@ builder.Services.AddDbContext<GachaDbContext>(options =>
 );
 
 builder.Services.AddScoped<GachaSimulator.Services.GachaService>();
+builder.Services.AddScoped<GachaSimulator.Services.FileUploadService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+
 
 var app = builder.Build();
 

@@ -53,11 +53,21 @@ public class GachaService
     public async Task<List<WishHistory>> RollBannerAsync(int bannerId, int times)
     {
         var results = new List<WishHistory>();
-        var pityState = await _context.UserPityState.FirstOrDefaultAsync();
+        
+        // Lấy banner để biết banner type
+        var banner = await _context.Banners.FirstOrDefaultAsync(b => b.Id == bannerId);
+        if (banner == null)
+        {
+            throw new Exception($"Không tìm thấy banner với ID: {bannerId}");
+        }
+
+        // Lấy hoặc tạo pity state theo banner type
+        var pityState = await _context.UserPityState
+            .FirstOrDefaultAsync(p => p.BannerType == banner.Type);
 
         if (pityState == null)
         {
-            pityState = new UserPityState { BannerType = BannerType.character};
+            pityState = new UserPityState { BannerType = banner.Type };
             _context.UserPityState.Add(pityState);
             await _context.SaveChangesAsync();
         }
@@ -77,41 +87,100 @@ public class GachaService
         return results;
     }
 
+    public async Task<int> GetTotalRollsAsync(int bannerId)
+    {
+        return await _context.WishHistory
+            .CountAsync(w => w.BannerId == bannerId);
+    }
+
+    public async Task<(int pity5, int pity4, bool isGuaranteed)> GetCurrentPityStateAsync(int bannerId)
+    {
+        var banner = await _context.Banners.FirstOrDefaultAsync(b => b.Id == bannerId);
+        if (banner == null)
+        {
+            return (0, 0, false);
+        }
+
+        var pityState = await _context.UserPityState
+            .FirstOrDefaultAsync(p => p.BannerType == banner.Type);
+
+        if (pityState == null)
+        {
+            return (0, 0, false);
+        }
+
+        return (pityState.CurrentPity5, pityState.CurrentPity4, pityState.IsGuaranteed);
+    }
+
     private async Task<WishHistory> RollSingleAsync(UserPityState state, List<int> rateUps, int bannerId)
     {
         state.CurrentPity5++;
         state.CurrentPity4++;
 
+        // Lưu pity trước khi reset để lưu vào lịch sử
+        int pityAtPull = state.CurrentPity5;
+        
         int rarity = DetermineRarity(state.CurrentPity5, state.CurrentPity4);
         Items resultItem;
         bool isWin5050 = false;
 
         if (rarity == 5)
         {
+            // Reset pity 5 sao
             state.CurrentPity5 = 0;
 
-            if (state.IsGuaranteed || _random.NextDouble() < 0.5)
+            // Kiểm tra có rate-up items không
+            var rateUp5Stars = rateUps.Any() 
+                ? await _context.Items
+                    .Where(x => x.Rarity == 5 && rateUps.Contains(x.Id))
+                    .ToListAsync()
+                : new List<Items>();
+
+            if (state.IsGuaranteed || (_random.NextDouble() < 0.5 && rateUp5Stars.Any()))
             {
                 // TRÚNG RATE UP (Ra tướng trong banner)
-                int rateUpId = rateUps.FirstOrDefault(); // Lấy tướng đầu tiên trong list rate up (VD: Hu Tao)
-                // Lưu ý: Thực tế cần check xem rateUps có null không, ở đây giả sử DB luôn đúng
-                resultItem = await _context.Items.FindAsync(rateUpId) ?? throw new Exception("DB lỗi: Không tìm thấy tướng Rate Up");
-
-                state.IsGuaranteed = false; // Reset bảo hiểm về 50/50
-                isWin5050 = true;
+                if (rateUp5Stars.Any())
+                {
+                    resultItem = rateUp5Stars[_random.Next(rateUp5Stars.Count)];
+                    state.IsGuaranteed = false; // Reset bảo hiểm về 50/50
+                    isWin5050 = true;
+                }
+                else
+                {
+                    // Nếu không có rate-up 5 sao, lấy random 5 sao bất kỳ
+                    var all5Stars = await _context.Items.Where(x => x.Rarity == 5).ToListAsync();
+                    if (all5Stars.Any())
+                    {
+                        resultItem = all5Stars[_random.Next(all5Stars.Count)];
+                        state.IsGuaranteed = false;
+                        isWin5050 = true;
+                    }
+                    else
+                    {
+                        throw new Exception("Không có item 5 sao trong database");
+                    }
+                }
             }
             else
             {
-                // LỆCH RATE (Ra Qiqi, Diluc...)
-                // Lấy random 1 tướng 5 sao KHÔNG nằm trong list Rate Up
+                // LỆCH RATE (Ra tướng standard)
                 var standard5Stars = await _context.Items
-                    .Where(x => x.Rarity == 5 && !rateUps.Contains(x.Id))
+                    .Where(x => x.Rarity == 5 && (rateUps.Count == 0 || !rateUps.Contains(x.Id)))
                     .ToListAsync();
 
                 if (standard5Stars.Any())
+                {
                     resultItem = standard5Stars[_random.Next(standard5Stars.Count)];
+                }
+                else if (rateUp5Stars.Any())
+                {
+                    // Fallback: nếu không có standard, lấy rate-up
+                    resultItem = rateUp5Stars[_random.Next(rateUp5Stars.Count)];
+                }
                 else
-                    resultItem = await _context.Items.FindAsync(rateUps.First()); // Fallback nếu DB không có tướng thường
+                {
+                    throw new Exception("Không có item 5 sao trong database");
+                }
 
                 state.IsGuaranteed = true; // Kích hoạt bảo hiểm cho lần sau
                 isWin5050 = false;
@@ -120,20 +189,54 @@ public class GachaService
         else if (rarity == 4)
         {
             state.CurrentPity4 = 0; // Reset pity 4 sao
-                                    // Logic 4 sao đơn giản hóa: 50% ra rate up, 50% ra thường
-                                    // (Bạn có thể thêm logic bảo hiểm 4 sao nếu muốn)
-            var pool4 = await _context.Items.Where(x => x.Rarity == 4).ToListAsync();
-            resultItem = pool4[_random.Next(pool4.Count)];
+            
+            // Logic 4 sao: ưu tiên rate-up
+            var rateUp4Stars = rateUps.Any()
+                ? await _context.Items
+                    .Where(x => x.Rarity == 4 && rateUps.Contains(x.Id))
+                    .ToListAsync()
+                : new List<Items>();
+
+            var all4Stars = await _context.Items.Where(x => x.Rarity == 4).ToListAsync();
+            
+            if (all4Stars.Any())
+            {
+                // 50% rate-up nếu có, 50% random
+                if (rateUp4Stars.Any() && _random.NextDouble() < 0.5)
+                {
+                    resultItem = rateUp4Stars[_random.Next(rateUp4Stars.Count)];
+                }
+                else
+                {
+                    resultItem = all4Stars[_random.Next(all4Stars.Count)];
+                }
+            }
+            else
+            {
+                throw new Exception("Không có item 4 sao trong database");
+            }
         }
         else
         {
-            // 3 Sao (Rác)
-            // Lấy đại vũ khí 3 sao nào đó
+            // 3 Sao
             var pool3 = await _context.Items.Where(x => x.Rarity == 3).ToListAsync();
             if (pool3.Any())
+            {
                 resultItem = pool3[_random.Next(pool3.Count)];
+            }
             else
-                resultItem = new Models.Items { Name = "Rác 3 Sao", Rarity = 3, ImageUrl = "" }; // Fallback
+            {
+                // Tạo fallback item và lưu vào DB nếu chưa có
+                resultItem = new Items 
+                { 
+                    Name = "Item 3 Sao", 
+                    Rarity = 3, 
+                    ImageUrl = "",
+                    Type = ItemType.weapon
+                };
+                _context.Items.Add(resultItem);
+                await _context.SaveChangesAsync();
+            }
         }
 
         // Tạo record lịch sử
@@ -141,10 +244,10 @@ public class GachaService
         {
             Id = Guid.NewGuid(),
             BannerId = bannerId,
-            ItemId = resultItem.Id, // Có thể lỗi nếu item null, nhưng logic trên đã cover
-            Items = resultItem,      // Gán luôn object để tí nữa hiển thị UI khỏi query lại
+            ItemId = resultItem.Id,
+            Items = resultItem,
             TimePulled = DateTime.Now,
-            PityAtPull = (rarity == 5) ? state.CurrentPity5 : 0, // Chỉ cần lưu pity lúc nổ vàng để thống kê
+            PityAtPull = (rarity == 5) ? pityAtPull : 0, // Lưu pity lúc nổ 5 sao
             IsWin5050 = isWin5050
         };
 
@@ -224,6 +327,26 @@ public class GachaService
         if (banner != null)
         {
             _context.Banners.Remove(banner);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task ResetPityAsync(int bannerId)
+    {
+        var banner = await _context.Banners.FirstOrDefaultAsync(b => b.Id == bannerId);
+        if (banner == null)
+        {
+            throw new Exception($"Không tìm thấy banner với ID: {bannerId}");
+        }
+
+        var pityState = await _context.UserPityState
+            .FirstOrDefaultAsync(p => p.BannerType == banner.Type);
+
+        if (pityState != null)
+        {
+            pityState.CurrentPity5 = 0;
+            pityState.CurrentPity4 = 0;
+            pityState.IsGuaranteed = false;
             await _context.SaveChangesAsync();
         }
     }

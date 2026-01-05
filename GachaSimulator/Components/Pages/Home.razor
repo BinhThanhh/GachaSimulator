@@ -3,6 +3,7 @@
 @using GachaSimulator.Services
 @using GachaSimulator.Models
 @using System.Text.RegularExpressions
+@using MudBlazor
 @inject IJSRuntime JS
 @inject GachaService GachaService
 @inject IDialogService DialogService
@@ -41,7 +42,7 @@
             </div>
 
             <div class="banner-display">
-                @if (selectedBanner.BannerRateUps != null && selectedBanner != null)
+                @if (selectedBanner != null && selectedBanner.BannerRateUps != null)
                 {
                     <div class="banner-bg-desc" style="background-color: @GetThemeColorFromText(selectedBanner.Name, 0.9f);;"></div>
                     <p class="banner-text-desc-uprate-noti">
@@ -68,6 +69,24 @@
                 <div class="footer-btn">Chi Tiết</div>
                 <div class="footer-btn">Lịch Sử</div>
             </div>
+
+            @if (selectedBanner != null)
+            {
+                <div class="pity-info" style="position: absolute; bottom: 120px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; color: white; min-width: 200px;">
+                    <MudText Typo="Typo.h6" Class="mb-2">Thông tin Pity</MudText>
+                    <MudStack Spacing="1">
+                        <MudText Size="Size.Small">5⭐: @currentPity5</MudText>
+                        <MudText Size="Size.Small">4⭐: @currentPity4</MudText>
+                        @if (currentIsGuaranteed)
+                        {
+                            <MudText Size="Size.Small" Color="Color.Warning">⚠ Bảo hiểm đã kích hoạt</MudText>
+                        }
+                    </MudStack>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Class="mt-2" OnClick="ResetPity">
+                        Reset Pity
+                    </MudButton>
+                </div>
+            }
 
             <div class="gacha-controls">
                 <button class="wish-btn" @onclick="() => Roll(1)">
@@ -96,20 +115,76 @@
     private bool isRolling = false;
     private string currentBorderColor = "transparent";
     private ElementReference bannerImageRef;
+    private int currentPity5 = 0;
+    private int currentPity4 = 0;
+    private bool currentIsGuaranteed = false;
 
     protected override async Task OnInitializedAsync()
     {
-        banners = await GachaService.GetBannersAsync();
-        if (banners.Any())
+        try
         {
-            selectedBanner = banners.First();
+            banners = await GachaService.GetBannersAsync();
+            if (banners != null && banners.Any())
+            {
+                selectedBanner = banners.First();
+                // Đảm bảo banner được load với rate-ups
+                if (selectedBanner != null && selectedBanner.BannerRateUps == null)
+                {
+                    selectedBanner = await GachaService.GetBannerByIdAsync(selectedBanner.Id);
+                }
+                await LoadPityInfo();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi khi load banners: {ex.Message}");
         }
     }
 
-    private void SelectBanner(Banner banner)
+    private async Task SelectBanner(Banner banner)
     {
         currentBorderColor = "transparent";
-        selectedBanner = banner;
+        // Load lại banner với đầy đủ thông tin rate-ups
+        selectedBanner = await GachaService.GetBannerByIdAsync(banner.Id);
+        await LoadPityInfo();
+        StateHasChanged();
+    }
+
+    private async Task LoadPityInfo()
+    {
+        if (selectedBanner != null)
+        {
+            var (pity5, pity4, isGuaranteed) = await GachaService.GetCurrentPityStateAsync(selectedBanner.Id);
+            currentPity5 = pity5;
+            currentPity4 = pity4;
+            currentIsGuaranteed = isGuaranteed;
+        }
+    }
+
+    private async Task ResetPity()
+    {
+        if (selectedBanner == null) return;
+
+        bool? result = await DialogService.ShowMessageBox(
+            "Xác nhận Reset Pity",
+            "Bạn có chắc chắn muốn reset pity về 0?\nHành động này không thể hoàn tác.",
+            yesText: "Reset",
+            cancelText: "Hủy");
+
+        if (result == true)
+        {
+            try
+            {
+                await GachaService.ResetPityAsync(selectedBanner.Id);
+                await LoadPityInfo();
+                StateHasChanged();
+                await DialogService.ShowMessageBox("Thành công", "Pity đã được reset về 0!", yesText: "OK");
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowMessageBox("Lỗi", $"Không thể reset pity: {ex.Message}", yesText: "OK");
+            }
+        }
     }
 
     private async Task OnBannerImageLoaded()
@@ -131,14 +206,67 @@
 
     private async Task Roll(int times)
     {
-        if (isRolling || selectedBanner == null) return;
-        isRolling = true;
+        if (isRolling || selectedBanner == null) 
+        {
+            return;
+        }
+        
+        try
+        {
+            isRolling = true;
+            StateHasChanged();
 
-        var results = await GachaService.RollBannerAsync(selectedBanner.Id, times);
-        var message = string.Join(", ", results.Select(r => r.Items?.Name ?? "???"));
-        await DialogService.ShowMessageBox($"Kết quả: {selectedBanner.Name}", message, yesText: "Xác nhận");
-
-        isRolling = false;
+            var results = await GachaService.RollBannerAsync(selectedBanner.Id, times);
+            Console.WriteLine($"Roll thành công, có {results?.Count ?? 0} kết quả");
+            
+            // Cập nhật thông tin pity sau khi roll
+            await LoadPityInfo();
+            
+            if (results != null && results.Any())
+            {
+                var message = string.Join(", ", results.Select(r => r.Items?.Name ?? "???"));
+                Console.WriteLine($"Hiển thị dialog với message: {message}");
+                
+                // Lấy tổng số roll và pity hiện tại
+                var totalRolls = await GachaService.GetTotalRollsAsync(selectedBanner.Id);
+                var (pity5, pity4, isGuaranteed) = await GachaService.GetCurrentPityStateAsync(selectedBanner.Id);
+                
+                var titleHtml = ParseUnityTextToHtml(selectedBanner.Name);
+                var parameters = new DialogParameters
+                {
+                    ["Message"] = message,
+                    ["BannerNameHtml"] = titleHtml,
+                    ["PityUsed"] = times,
+                    ["TotalRolls"] = totalRolls,
+                    ["CurrentPity5"] = pity5,
+                    ["CurrentPity4"] = pity4,
+                    ["IsGuaranteed"] = isGuaranteed
+                };
+                
+                var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium };
+                await DialogService.ShowAsync<GachaResultDialog>("Kết quả", parameters, options);
+            }
+            else
+            {
+                Console.WriteLine("Không có kết quả từ gacha");
+                await DialogService.ShowMessageBox("Lỗi", "Không có kết quả trả về từ gacha!", yesText: "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi khi gacha: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+            }
+            await DialogService.ShowMessageBox("Lỗi", $"Đã xảy ra lỗi: {ex.Message}\n\nVui lòng kiểm tra:\n- Database đã có items chưa?\n- Banner đã có rate-up items chưa?", yesText: "OK");
+        }
+        finally
+        {
+            isRolling = false;
+            StateHasChanged(); // Update UI to remove loading state
+        }
     }
 
     private MarkupString ParseUnityText(string unityText)
@@ -147,6 +275,14 @@
         string html = Regex.Replace(unityText, @"<color=(.*?)>", "<span style=\"color:$1\">");
         html = html.Replace("</color>", "</span>");
         return new MarkupString(html);
+    }
+
+    private string ParseUnityTextToHtml(string unityText)
+    {
+        if (string.IsNullOrEmpty(unityText)) return "";
+        string html = Regex.Replace(unityText, @"<color=(.*?)>", "<span style=\"color:$1\">");
+        html = html.Replace("</color>", "</span>");
+        return html;
     }
 
     private string GetThemeColorFromText(string unityText, float opacity = 0.85f)

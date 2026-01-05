@@ -27,19 +27,33 @@ namespace GachaSimulator.Data
                       .HasConversion<string>();
             });
 
-            //modelBuilder.Entity<UserPityState>(entity =>
-            //{
-            //    entity.Property(e => e.BannerType).HasConversion<string>();
-            //});
-
+            // Banner.Type được lưu như string trong database (cho Add/Edit banner)
             modelBuilder.Entity<Banner>(entity =>
             {
                 entity.Property(e => e.Type).HasConversion<string>();
             });
 
+            // UserPityState.BannerType được lưu như integer trong database (để query nhanh)
+            // Không cần conversion cho UserPityState
+
+            modelBuilder.Entity<BannerRateUp>(entity =>
+            {
+                // Cấu hình relationship để sử dụng ItemId làm foreign key
+                entity.HasOne(b => b.Item)
+                      .WithMany()
+                      .HasForeignKey(b => b.ItemId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<WishHistory>(entity =>
             {
                 entity.Property(e => e.Id).HasColumnType("char(36)");
+                
+                // Cấu hình relationship để sử dụng ItemId làm foreign key
+                entity.HasOne(w => w.Items)
+                      .WithMany()
+                      .HasForeignKey(w => w.ItemId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

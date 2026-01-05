@@ -4,6 +4,7 @@
 @using GachaSimulator.Services
 @inject GachaService GachaService
 @inject NavigationManager NavManager
+@inject FileUploadService FileUploadService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-5 mb-5">
     <MudCard Elevation="3">
@@ -19,7 +20,20 @@
                     <MudItem xs="12" md="3">
                         <MudStack Spacing="3">
                             <MudTextField Label="Tên Banner" @bind-Value="newBanner.Name" Required="true" Variant="Variant.Outlined" />
-                            <MudTextField Label="Ảnh Lớn (ImageUrl)" @bind-Value="newBanner.ImageUrl" Variant="Variant.Outlined" />
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                                           HtmlTag="label" for="fileInputImage">
+                                    Upload Ảnh Lớn
+                                </MudButton>
+                                <InputFile id="fileInputImage" OnChange="UploadBigImage" hidden accept=".png, .jpg, .jpeg, .webp" />
+                                @if (!string.IsNullOrEmpty(newBanner.ImageUrl))
+                                {
+                                    <MudImage Src="@newBanner.ImageUrl" Height="50" Class="rounded" ObjectFit="ObjectFit.Cover" />
+                                    <MudText Typo="Typo.caption">Đã lưu: @newBanner.ImageUrl</MudText>
+                                }
+                            </MudStack>
                             <MudTextField Label="Icon Tròn (IconUrl)" @bind-Value="newBanner.IconUrl" Variant="Variant.Outlined" />
 
                             <MudSelect Label="Loại Banner" @bind-Value="newBanner.Type" Variant="Variant.Outlined">
@@ -99,6 +113,13 @@
 
         await GachaService.AddBannerAsync(newBanner, rateUpIds);
         NavManager.NavigateTo("/banners");
+    }
+
+    private async Task UploadBigImage(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var path = await FileUploadService.UploadFileAsync(file);
+        newBanner.ImageUrl = path;
     }
 
     private void Cancel() => NavManager.NavigateTo("/banners");
